@@ -1,15 +1,24 @@
 package hello.youtubecommentsearch.dto;
 
+import io.swagger.annotations.ApiModelProperty;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
 public class Channel {
+    String kind;
+
+    @ApiModelProperty(notes = "채널 이름")
     String title;
+    @ApiModelProperty(notes = "채널 id")
     String channelId;
+    @ApiModelProperty(notes = "채널 설명")
     String description;
+    @ApiModelProperty(notes = "썸네일 기본 url")
     String thumbnailsDefaultUrl;
+    @ApiModelProperty(notes = "썸네일 medium url")
     String thumbnailsMediumUrl;
-    String thumbnailsHighUrl; // defalut, medium, high 각각 값 모두 다름
+    @ApiModelProperty(notes = "썸네일 high url")
+    String thumbnailsHighUrl;
 }
