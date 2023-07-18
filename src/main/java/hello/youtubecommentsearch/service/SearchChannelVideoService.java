@@ -1,12 +1,8 @@
 package hello.youtubecommentsearch.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import hello.youtubecommentsearch.dto.Channel;
-import hello.youtubecommentsearch.dto.Video;
+
+import hello.youtubecommentsearch.dto.*;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -22,17 +18,15 @@ public class SearchChannelVideoService {
     private String DEVELOPER_KEY;
     private static final String API_URL = "https://youtube.googleapis.com/youtube/v3/search";
     private static final String PART = "snippet";
-    private static final String QUERY = "";
+    private static final String QUERY = "선바";
 
     private final WebClient webClient;
-    private final ObjectMapper objectMapper;
 
     public SearchChannelVideoService() {
         this.webClient = WebClient.create();
-        this.objectMapper = new ObjectMapper();
     }
 
-    public String search() throws JsonProcessingException {
+    public ChannelVideoResponse search() throws JsonProcessingException {
         String url = String.format("%s?part=%s&q=%s&key=%s", API_URL, PART, QUERY, DEVELOPER_KEY);
         Mono<JsonNode> response = webClient.get()
                 .uri(url)
@@ -41,33 +35,29 @@ public class SearchChannelVideoService {
 //		        .onStatus(HttpStatus::is5xxServerError, response -> ...)
                 .bodyToMono(JsonNode.class);
         JsonNode jsonNode = response.block();
-        ArrayNode jsonArray = JsonNodeFactory.instance.arrayNode();
-
+        ChannelVideoResponse channelVideoResponse = new ChannelVideoResponse();
         if (jsonNode != null && jsonNode.has("items") && jsonNode.get("items").isArray()) {
             for (JsonNode item :jsonNode.get("items")) {
-                ObjectNode objectNode = JsonNodeFactory.instance.objectNode();
                 JsonNode id = item.get("id");
                 if (id != null && id.has("kind")) {
                     String kind = id.get("kind").asText();
                     if ("youtube#channel".equals(kind)) {
                         Channel channel = initChannel(item, id);
-                        objectNode.put("type", "channel");
-                        objectNode.set("data", objectMapper.valueToTree(channel));
+                        channelVideoResponse.getChannels().add(channel);
                     } else if ("youtube#video".equals(kind)) {
                         Video video = initVideo(item, id);
-                        objectNode.put("type", "video");
-                        objectNode.set("data", objectMapper.valueToTree(video));
+                        channelVideoResponse.getVideos().add(video);
                     }
-                    jsonArray.add(objectNode);
                 }
             }
         }
-        return objectMapper.writeValueAsString(jsonArray);
+        return channelVideoResponse;
     }
 
     private Channel initChannel(JsonNode item, JsonNode id) {
         Channel channel = new Channel();
 
+        String kind = id.get("kind").asText();
         String channelId = id.get("channelId").asText();
         JsonNode snippet = item.get("snippet");
         String title = snippet.get("title").asText();
@@ -77,6 +67,7 @@ public class SearchChannelVideoService {
         String thumbnailsMediumUrl = thumbnails.get("medium").get("url").asText();
         String thumbnailsHighUrl = thumbnails.get("high").get("url").asText();
 
+        channel.setKind(kind);
         channel.setChannelId(channelId);
         channel.setTitle(title);
         channel.setDescription(description);
@@ -90,6 +81,7 @@ public class SearchChannelVideoService {
     private Video initVideo(JsonNode item, JsonNode id) {
         Video video = new Video();
 
+        String kind = id.get("kind").asText();
         String videoId = id.get("videoId").asText();
         JsonNode snippet = item.get("snippet");
         String channelId = snippet.get("channelId").asText();
@@ -106,6 +98,7 @@ public class SearchChannelVideoService {
         int thumbnailsHighWidth = thumbnails.get("high").get("width").asInt();
         int thumbnailsHighHeight = thumbnails.get("high").get("height").asInt();
 
+        video.setKind(kind);
         video.setVideoId(videoId);
         video.setTitle(title);
         video.setChannelId(channelId);
