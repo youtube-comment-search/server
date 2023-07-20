@@ -6,7 +6,7 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class Channel {
+public class ChannelDTO {
     String kind;
 
     @ApiModelProperty(notes = "채널 이름")

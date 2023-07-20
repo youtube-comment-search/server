@@ -6,7 +6,7 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class Video {
+public class VideoDTO {
     String kind;
 
     @ApiModelProperty(notes = "영상 id")

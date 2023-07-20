@@ -18,7 +18,7 @@ public class SearchChannelVideoService {
     private String DEVELOPER_KEY;
     private static final String API_URL = "https://youtube.googleapis.com/youtube/v3/search";
     private static final String PART = "snippet";
-    private static final String QUERY = "선바";
+//    private static final String QUERY = "선바";
 
     private final WebClient webClient;
 
@@ -26,8 +26,10 @@ public class SearchChannelVideoService {
         this.webClient = WebClient.create();
     }
 
-    public ChannelVideoResponse search() throws JsonProcessingException {
-        String url = String.format("%s?part=%s&q=%s&key=%s", API_URL, PART, QUERY, DEVELOPER_KEY);
+    // TODO: 2023/07/20 api 파라미터가 videoId인지 channelId인지 어떻게 구별할지?
+    // 쿼리스트링을 주는거니까 상관 없지 않나?
+    public ChannelVideoResponseDTO search(String query) throws JsonProcessingException {
+        String url = String.format("%s?part=%s&q=%s&key=%s", API_URL, PART, query, DEVELOPER_KEY);
         Mono<JsonNode> response = webClient.get()
                 .uri(url)
                 .retrieve()
@@ -35,27 +37,27 @@ public class SearchChannelVideoService {
 //		        .onStatus(HttpStatus::is5xxServerError, response -> ...)
                 .bodyToMono(JsonNode.class);
         JsonNode jsonNode = response.block();
-        ChannelVideoResponse channelVideoResponse = new ChannelVideoResponse();
+        ChannelVideoResponseDTO channelVideoResponseDTO = new ChannelVideoResponseDTO();
         if (jsonNode != null && jsonNode.has("items") && jsonNode.get("items").isArray()) {
             for (JsonNode item :jsonNode.get("items")) {
                 JsonNode id = item.get("id");
                 if (id != null && id.has("kind")) {
                     String kind = id.get("kind").asText();
                     if ("youtube#channel".equals(kind)) {
-                        Channel channel = initChannel(item, id);
-                        channelVideoResponse.getChannels().add(channel);
+                        ChannelDTO channelDTO = initChannel(item, id);
+                        channelVideoResponseDTO.getChannels().add(channelDTO);
                     } else if ("youtube#video".equals(kind)) {
-                        Video video = initVideo(item, id);
-                        channelVideoResponse.getVideos().add(video);
+                        VideoDTO videoDTO = initVideo(item, id);
+                        channelVideoResponseDTO.getVideos().add(videoDTO);
                     }
                 }
             }
         }
-        return channelVideoResponse;
+        return channelVideoResponseDTO;
     }
 
-    private Channel initChannel(JsonNode item, JsonNode id) {
-        Channel channel = new Channel();
+    private ChannelDTO initChannel(JsonNode item, JsonNode id) {
+        ChannelDTO channelDTO = new ChannelDTO();
 
         String kind = id.get("kind").asText();
         String channelId = id.get("channelId").asText();
@@ -67,19 +69,19 @@ public class SearchChannelVideoService {
         String thumbnailsMediumUrl = thumbnails.get("medium").get("url").asText();
         String thumbnailsHighUrl = thumbnails.get("high").get("url").asText();
 
-        channel.setKind(kind);
-        channel.setChannelId(channelId);
-        channel.setTitle(title);
-        channel.setDescription(description);
-        channel.setThumbnailsDefaultUrl(thumbnailsDefaultUrl);
-        channel.setThumbnailsMediumUrl(thumbnailsMediumUrl);
-        channel.setThumbnailsHighUrl(thumbnailsHighUrl);
+        channelDTO.setKind(kind);
+        channelDTO.setChannelId(channelId);
+        channelDTO.setTitle(title);
+        channelDTO.setDescription(description);
+        channelDTO.setThumbnailsDefaultUrl(thumbnailsDefaultUrl);
+        channelDTO.setThumbnailsMediumUrl(thumbnailsMediumUrl);
+        channelDTO.setThumbnailsHighUrl(thumbnailsHighUrl);
 
-        return channel;
+        return channelDTO;
     }
 
-    private Video initVideo(JsonNode item, JsonNode id) {
-        Video video = new Video();
+    private VideoDTO initVideo(JsonNode item, JsonNode id) {
+        VideoDTO videoDTO = new VideoDTO();
 
         String kind = id.get("kind").asText();
         String videoId = id.get("videoId").asText();
@@ -98,21 +100,21 @@ public class SearchChannelVideoService {
         int thumbnailsHighWidth = thumbnails.get("high").get("width").asInt();
         int thumbnailsHighHeight = thumbnails.get("high").get("height").asInt();
 
-        video.setKind(kind);
-        video.setVideoId(videoId);
-        video.setTitle(title);
-        video.setChannelId(channelId);
-        video.setChannelTitle(channelTitle);
-        video.setThumbnailsDefaultUrl(thumbnailsDefaultUrl);
-        video.setThumbnailsMediumUrl(thumbnailsMediumUrl);
-        video.setThumbnailsHighUrl(thumbnailsHighUrl);
+        videoDTO.setKind(kind);
+        videoDTO.setVideoId(videoId);
+        videoDTO.setTitle(title);
+        videoDTO.setChannelId(channelId);
+        videoDTO.setChannelTitle(channelTitle);
+        videoDTO.setThumbnailsDefaultUrl(thumbnailsDefaultUrl);
+        videoDTO.setThumbnailsMediumUrl(thumbnailsMediumUrl);
+        videoDTO.setThumbnailsHighUrl(thumbnailsHighUrl);
 
-        video.setThumbnailsDefaultWidth(thumbnailsDefaultWidth);
-        video.setThumbnailsDefaultHeight(thumbnailsDefaultHeight);
-        video.setThumbnailsMediumWidth(thumbnailsMediumWidth);
-        video.setThumbnailsDefaultHeight(thumbnailsMediumHeight);
-        video.setThumbnailsHighWidth(thumbnailsHighWidth);
-        video.setThumbnailsHighHeight(thumbnailsHighHeight);
-        return video;
+        videoDTO.setThumbnailsDefaultWidth(thumbnailsDefaultWidth);
+        videoDTO.setThumbnailsDefaultHeight(thumbnailsDefaultHeight);
+        videoDTO.setThumbnailsMediumWidth(thumbnailsMediumWidth);
+        videoDTO.setThumbnailsDefaultHeight(thumbnailsMediumHeight);
+        videoDTO.setThumbnailsHighWidth(thumbnailsHighWidth);
+        videoDTO.setThumbnailsHighHeight(thumbnailsHighHeight);
+        return videoDTO;
     }
 }
