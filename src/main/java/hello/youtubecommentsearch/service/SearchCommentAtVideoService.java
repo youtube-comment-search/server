@@ -1,13 +1,14 @@
 package hello.youtubecommentsearch.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-
 import hello.youtubecommentsearch.dto.*;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
 
 import java.util.ArrayList;
@@ -28,15 +29,19 @@ public class SearchCommentAtVideoService {
         this.webClient = WebClient.create();
     }
 
-    public List<CommentVideoDTO> search(String videoId) throws JsonProcessingException {
+    public Mono<List<CommentVideoDTO>> search(String videoId) {
         String url = String.format("%s?part=%s&videoId=%s&key=%s", API_URL, PART, videoId, DEVELOPER_KEY);
-        Mono<JsonNode> response = webClient.get()
+        return webClient.get()
                 .uri(url)
                 .retrieve()
-//                .onStatus(HttpStatus::is4xxClientError, response -> ...)
-//		        .onStatus(HttpStatus::is5xxServerError, response -> ...)
-                .bodyToMono(JsonNode.class);
-        JsonNode jsonNode = response.block();
+                .onStatus(HttpStatus::is4xxClientError, this::handleClientError)
+                .onStatus(HttpStatus::is5xxServerError, this::handleServerError)
+                .bodyToMono(JsonNode.class)
+                .map(this::parseResponse)
+                .onErrorResume(this::handleError);
+    }
+
+    private List<CommentVideoDTO> parseResponse(JsonNode jsonNode) {
         List<CommentVideoDTO> commentVideoDTOList = new ArrayList<>();
         if (jsonNode != null && jsonNode.has("items") && jsonNode.get("items").isArray()) {
             for (JsonNode item : jsonNode.get("items")) {
@@ -59,5 +64,22 @@ public class SearchCommentAtVideoService {
         commentVideoDTO.setTextDisplay(snippet.get("textDisplay").asText());
 
         return commentVideoDTO;
+    }
+
+    private Mono<? extends Throwable> handleClientError(ClientResponse response) {
+        // Handle 4xx Client Errors here, if needed
+        return Mono.error(new WebClientResponseException(response.statusCode().value(),
+                "Client Error", response.headers().asHttpHeaders(), null, null));
+    }
+
+    private Mono<? extends Throwable> handleServerError(ClientResponse response) {
+        // Handle 5xx Server Errors here, if needed
+        return Mono.error(new WebClientResponseException(response.statusCode().value(),
+                "Server Error", response.headers().asHttpHeaders(), null, null));
+    }
+
+    private Mono<List<CommentVideoDTO>> handleError(Throwable throwable) {
+        // Handle other errors here, if needed
+        return Mono.error(throwable);
     }
 }

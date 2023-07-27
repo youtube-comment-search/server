@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
 
 import java.util.ArrayList;
@@ -31,14 +32,20 @@ public class SearchCommentAtChannelService {
         this.webClient = WebClient.create();
     }
 
-    public List<CommentChannelDTO> search(String channelId) throws JsonProcessingException {
+    public Mono<List<CommentChannelDTO>> search(String channelId){
         String url = String.format("%s?part=%s&allThreadsRelatedToChannelId=%s&key=%s", API_URL, PART, channelId, DEVELOPER_KEY);
-        Mono<JsonNode> response = webClient.get()
+        return webClient.get()
                 .uri(url)
                 .retrieve()
-                .bodyToMono(JsonNode.class);
+                .onStatus(HttpStatus::is4xxClientError, this::handleClientError)
+                .onStatus(HttpStatus::is5xxServerError, this::handleServerError)
+                .bodyToMono(JsonNode.class)
+                .map(this::parseResponse)
+                .onErrorResume(this::handleError);
 
-        JsonNode jsonNode = response.block();
+    }
+
+    private List<CommentChannelDTO> parseResponse(JsonNode jsonNode) {
         List<CommentChannelDTO> commentChannelDTOList = new ArrayList<>();
         if (jsonNode != null && jsonNode.has("items") && jsonNode.get("items").isArray()) {
             for (JsonNode item : jsonNode.get("items")) {
@@ -60,5 +67,22 @@ public class SearchCommentAtChannelService {
         commentChannelDTO.setTextOriginal(snippet.get("textOriginal").asText());
         commentChannelDTO.setTextDisplay(snippet.get("textDisplay").asText());
         return commentChannelDTO;
+    }
+
+    private Mono<? extends Throwable> handleClientError(ClientResponse response) {
+        // Handle 4xx Client Errors here, if needed
+        return Mono.error(new WebClientResponseException(response.statusCode().value(),
+                "Client Error", response.headers().asHttpHeaders(), null, null));
+    }
+
+    private Mono<? extends Throwable> handleServerError(ClientResponse response) {
+        // Handle 5xx Server Errors here, if needed
+        return Mono.error(new WebClientResponseException(response.statusCode().value(),
+                "Server Error", response.headers().asHttpHeaders(), null, null));
+    }
+
+    private Mono<List<CommentChannelDTO>> handleError(Throwable throwable) {
+        // Handle other errors here, if needed
+        return Mono.error(throwable);
     }
 }
