@@ -26,14 +26,54 @@ public class SearchCommentAtChannelService {
     private static final String API_URL = "https://youtube.googleapis.com/youtube/v3/commentThreads";
     private static final String PART = "snippet, replies";
 //    private String channelId = "UCrpoE9e2-eWcj8AYvwYdebw";
+    private static final int MAXRESULTS = 100;
     private final WebClient webClient;
+
 
     public SearchCommentAtChannelService() {
         this.webClient = WebClient.create();
     }
 
+    public Mono<List<CommentChannelDTO>> getAllComments(String channelId) {
+        List<CommentChannelDTO> allComments = new ArrayList<>();
+        String nextPageToken = null;
+
+        return getComments(channelId, nextPageToken, allComments);
+    }
+
+    private Mono<List<CommentChannelDTO>> getComments(String channelId, String nextPageToken, List<CommentChannelDTO> allComments) {
+        String url = String.format("%s?part=%s&allThreadsRelatedToChannelId=%s&maxResults=%s&key=%s",
+                API_URL, PART, channelId, MAXRESULTS, DEVELOPER_KEY);
+
+        if (nextPageToken != null) {
+            url += "&pageToken=" + nextPageToken;
+        }
+
+        return webClient.get()
+                .uri(url)
+                .retrieve()
+                .onStatus(HttpStatus::is4xxClientError, this::handleClientError)
+                .onStatus(HttpStatus::is5xxServerError, this::handleServerError)
+                .bodyToMono(JsonNode.class)
+                .flatMap(jsonNode -> {
+                    List<CommentChannelDTO> commentChannelDTOList = parseResponse(jsonNode);
+                    allComments.addAll(commentChannelDTOList);
+
+                    // 다음페이지 있는지 토큰으로 확인
+                    String nextPageTokenResponse = jsonNode.get("nextPageToken") != null ? jsonNode.get("nextPageToken").asText() : null;
+                    if (nextPageTokenResponse != null) {
+                        // 재귀적으로 다음페이지 가져옴
+                        return getComments(channelId, nextPageTokenResponse, allComments);
+                    } else {
+                        // 다 가져오고 맨 마지막 페이지일 때 return
+                        return Mono.just(allComments);
+                    }
+                })
+                .onErrorResume(this::handleError);
+    }
+
     public Mono<List<CommentChannelDTO>> search(String channelId){
-        String url = String.format("%s?part=%s&allThreadsRelatedToChannelId=%s&key=%s", API_URL, PART, channelId, DEVELOPER_KEY);
+        String url = String.format("%s?part=%s&allThreadsRelatedToChannelId=%s&maxResults=%s&key=%s", API_URL, PART, channelId, MAXRESULTS, DEVELOPER_KEY);
         return webClient.get()
                 .uri(url)
                 .retrieve()
