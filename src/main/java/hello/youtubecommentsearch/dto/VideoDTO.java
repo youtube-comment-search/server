@@ -1,6 +1,6 @@
 package hello.youtubecommentsearch.dto;
 
-import io.swagger.annotations.ApiModelProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -9,33 +9,33 @@ import lombok.Setter;
 public class VideoDTO {
     String kind;
 
-    @ApiModelProperty(notes = "영상 id")
+    @Schema(description = "영상 id")
     String videoId;
-    @ApiModelProperty(notes = "영상 제목")
+    @Schema(description = "영상 제목")
     String title;
-    @ApiModelProperty(notes = "채널 id")
+    @Schema(description = "채널 id")
     String channelId;
-    @ApiModelProperty(notes = "채널 이름")
+    @Schema(description = "채널 이름")
     String channelTitle;
 
-    @ApiModelProperty(notes = "썸네일 기본 url")
+    @Schema(description = "썸네일 기본 url")
     String thumbnailsDefaultUrl;
-    @ApiModelProperty(notes = "썸네일 기본 width")
+    @Schema(description = "썸네일 기본 width")
     int thumbnailsDefaultWidth;
-    @ApiModelProperty(notes = "썸네일 기본 height")
+    @Schema(description = "썸네일 기본 height")
     int thumbnailsDefaultHeight;
 
-    @ApiModelProperty(notes = "썸네일 medium url")
+    @Schema(description = "썸네일 medium url")
     String thumbnailsMediumUrl;
-    @ApiModelProperty(notes = "썸네일 medium width")
+    @Schema(description = "썸네일 medium width")
     int thumbnailsMediumWidth;
-    @ApiModelProperty(notes = "썸네일 medium height")
+    @Schema(description = "썸네일 medium height")
     int thumbnailsMediumHeight;
 
-    @ApiModelProperty(notes = "썸네일 high url")
+    @Schema(description = "썸네일 high url")
     String thumbnailsHighUrl;
-    @ApiModelProperty(notes = "썸네일 high width")
+    @Schema(description = "썸네일 high width")
     int thumbnailsHighWidth;
-    @ApiModelProperty(notes = "썸네일 high height")
+    @Schema(description = "썸네일 high height")
     int thumbnailsHighHeight;
 }

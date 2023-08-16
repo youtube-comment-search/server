@@ -17,7 +17,7 @@ import reactor.core.publisher.Mono;
 import java.util.List;
 
 @RestController
-@RequestMapping("/search/comment-video")
+@RequestMapping("/search/comment/video")
 @Tag(name = "Youtube Comment Search API Test", description = "API Document")
 //@Api(tags = {"Youtube Comment Search API Test"})
 public class SearchCommentAtVideoComtroller {
@@ -29,7 +29,6 @@ public class SearchCommentAtVideoComtroller {
         this.searchCommentAtVideoService = searchCommentAtVideoService;
     }
 
-//    @ApiOperation(value = "비디오로 댓글 리스트 검색", notes = "비디오로 댓글 리스트 검색 API")
     @Operation(summary = "비디오로 댓글 리스트 검색", description = "비디오로 댓글 리스트 검색 API")
     @GetMapping
     public Mono<ResponseEntity<List<CommentVideoDTO>>> getCommentAtVideo(@RequestParam("videoId") String videoId) {

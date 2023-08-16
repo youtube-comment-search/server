@@ -1,17 +1,17 @@
 package hello.youtubecommentsearch.dto;
 
-import io.swagger.annotations.ApiModelProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.util.ArrayList;
 import java.util.List;
 
 
 public class ChannelVideoResponseDTO {
-    @ApiModelProperty(notes = "채널 리스트")
+    @Schema(description = "채널 리스트")
     private final List<ChannelDTO> channelDTOS = new ArrayList<>();
-    @ApiModelProperty(notes = "영상 리스트")
+    @Schema(description = "영상 리스트")
     private final List<VideoDTO> videoDTOS = new ArrayList<>();
-    @ApiModelProperty(notes = "에러 메시지")
+    @Schema(description = "에러 메시지")
     private String errorMessage;
 
     public ChannelVideoResponseDTO() {
