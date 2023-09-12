@@ -4,7 +4,9 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 
 import hello.youtubecommentsearch.dto.*;
 import com.fasterxml.jackson.databind.JsonNode;
+import io.swagger.v3.core.util.Json;
 import lombok.extern.slf4j.Slf4j;
+import org.hibernate.engine.transaction.jta.platform.internal.JOnASJtaPlatform;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -28,15 +30,17 @@ public class SearchChannelVideoService {
 
     // TODO: 2023/07/20 api 파라미터가 videoId인지 channelId인지 어떻게 구별할지?
     // 쿼리스트링을 주는거니까 상관 없지 않나?
-    public ChannelVideoResponseDTO search(String query) throws JsonProcessingException {
+
+    public Mono<ChannelVideoResponseDTO> search(String query) {
         String url = String.format("%s?part=%s&q=%s&key=%s", API_URL, PART, query, DEVELOPER_KEY);
-        Mono<JsonNode> response = webClient.get()
+        return webClient.get()
                 .uri(url)
                 .retrieve()
-//                .onStatus(HttpStatus::is4xxClientError, response -> ...)
-//		        .onStatus(HttpStatus::is5xxServerError, response -> ...)
-                .bodyToMono(JsonNode.class);
-        JsonNode jsonNode = response.block();
+                .bodyToMono(JsonNode.class)
+                .map(jsonNode -> parseResponse(jsonNode));
+    }
+
+    private ChannelVideoResponseDTO parseResponse(JsonNode jsonNode) {
         ChannelVideoResponseDTO channelVideoResponseDTO = new ChannelVideoResponseDTO();
         if (jsonNode != null && jsonNode.has("items") && jsonNode.get("items").isArray()) {
             for (JsonNode item :jsonNode.get("items")) {
